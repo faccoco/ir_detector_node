@@ -203,10 +203,12 @@ public:
     }
 
     int detect_cross(cv::Mat& image){
-        int threshold = 187;
-        int min_contour_area = 1000;
+        int threshold = 225;
+        int min_contour_area = 300;
+        float min_rect_ratio = 5;
+        float max_rect_angle = 10;
 
-        cv::Mat compressed = this->compressImg(image, 0.25);
+        cv::Mat compressed = this->compressImg(image, 0.5);
         cv::Mat binary = this->binary(compressed, threshold);
 
         cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(7, 7));
@@ -221,21 +223,25 @@ public:
         std::vector<std::vector<cv::Point>> contours_result;
         for (auto& contour : contours){
             auto contour_area = cv::contourArea(contour);
-            if (contour_area < 300){
+            if (contour_area < min_contour_area){
                 continue;
             }
 
             cv::RotatedRect rect = cv::minAreaRect(contour);
 
+            if (rect.center.y < 0.5 * compressed.rows){
+                continue;
+            }
+
             if (rect.size.width < rect.size.height){
                 std::swap(rect.size.width, rect.size.height);
             }
             float ratio = rect.size.width / rect.size.height;
-            if (ratio < 10){
+            if (ratio < min_rect_ratio){
                 continue;
             }
 
-            if (std::abs(rect.angle) > 10){
+            if (std::abs(rect.angle) > max_rect_angle){
                 std::cout << "angle: " << rect.angle << std::endl;
                 continue;
             }
