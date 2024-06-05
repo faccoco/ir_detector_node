@@ -206,7 +206,7 @@ public:
         int threshold = 187;
         int min_contour_area = 1000;
 
-        cv::Mat compressed = this->compressImg(image, 0.5);
+        cv::Mat compressed = this->compressImg(image, 0.25);
         cv::Mat binary = this->binary(compressed, threshold);
 
         cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(7, 7));
