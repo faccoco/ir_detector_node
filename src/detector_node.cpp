@@ -1,5 +1,6 @@
 #include "image_transport/publisher.h"
 #include "ros/publisher.h"
+#include <cstdlib>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/core/types.hpp>
 #include <opencv2/imgproc.hpp>
@@ -7,6 +8,7 @@
 #include <image_transport/image_transport.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <cv_bridge/cv_bridge.h>
+#include <utility>
 #include <vector>
 #include <std_msgs/Int16.h>
 
@@ -201,15 +203,48 @@ public:
     }
 
     int detect_cross(cv::Mat& image){
-        int threshold = 200;
+        int threshold = 187;
+        int min_contour_area = 1000;
 
-        cv::Mat compressed = this->compressImg(image, 0.01);
+        cv::Mat compressed = this->compressImg(image, 0.5);
         cv::Mat binary = this->binary(compressed, threshold);
 
-        cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
-        cv::dilate(binary, binary, kernel);
+        cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(7, 7));
+        // cv::dilate(binary, binary, kernel);
+        cv::morphologyEx(binary, binary, cv::MORPH_CLOSE, kernel);
 
         this->cross_binary_pub.publish(cv_bridge::CvImage(std_msgs::Header(), "mono8", binary).toImageMsg());
+
+        std::vector<std::vector<cv::Point>> contours;
+        cv::findContours(binary, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+        std::vector<std::vector<cv::Point>> contours_result;
+        for (auto& contour : contours){
+            auto contour_area = cv::contourArea(contour);
+            if (contour_area < 300){
+                continue;
+            }
+
+            cv::RotatedRect rect = cv::minAreaRect(contour);
+
+            if (rect.size.width < rect.size.height){
+                std::swap(rect.size.width, rect.size.height);
+            }
+            float ratio = rect.size.width / rect.size.height;
+            if (ratio < 10){
+                continue;
+            }
+
+            if (std::abs(rect.angle) > 10){
+                std::cout << "angle: " << rect.angle << std::endl;
+                continue;
+            }
+
+            contours_result.push_back(contour);
+        }
+
+        cv::drawContours(compressed, contours_result, -1, cv::Scalar(0, 255, 0), 10);
+        this->cross_contour_pub.publish(cv_bridge::CvImage(std_msgs::Header(), "bgr8", compressed).toImageMsg());
 
         return 0;
     }
