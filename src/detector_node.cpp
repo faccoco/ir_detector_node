@@ -199,6 +199,20 @@ public:
             return 0;
         }
     }
+
+    int detect_cross(cv::Mat& image){
+        int threshold = 200;
+
+        cv::Mat compressed = this->compressImg(image, 0.01);
+        cv::Mat binary = this->binary(compressed, threshold);
+
+        cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+        cv::dilate(binary, binary, kernel);
+
+        this->cross_binary_pub.publish(cv_bridge::CvImage(std_msgs::Header(), "mono8", binary).toImageMsg());
+
+        return 0;
+    }
     
 
     image_transport::Publisher signal_binary_pub;
@@ -233,7 +247,7 @@ int imageCallback(const sensor_msgs::ImageConstPtr& msg, Detector& detector)
     light_result_msg.data = light_result;
     detector.light_result_pub.publish(light_result_msg);
 
-    
+    int cross_result = detector.detect_cross(image);
 
     return 0;
 }
