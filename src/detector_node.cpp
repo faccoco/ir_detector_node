@@ -246,7 +246,7 @@ public:
         cv::drawContours(compressed, contours_result, -1, cv::Scalar(0, 255, 0), 10);
         this->cross_contour_pub.publish(cv_bridge::CvImage(std_msgs::Header(), "bgr8", compressed).toImageMsg());
 
-        return 0;
+        return contours_result.size() > 0 ? 1 : 0;
     }
     
 
