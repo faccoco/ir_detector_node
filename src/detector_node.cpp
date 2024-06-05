@@ -28,12 +28,11 @@ public:
         this->yellow_light_binary_pub = it.advertise("/detector/light/yellow/binary", 1);
         this->yellow_light_contour_pub = it.advertise("/detector/light/yellow/contours", 1);
         this->light_result_pub = nh.advertise<std_msgs::Int16>("/detector/light/result", 1);
-
     }
 
     cv::Mat compressImg(cv::Mat& image, float ratio){
-        cv::Mat compressed = image.clone();
-        // cv::resize(image, compressed, cv::Size(image.cols * ratio, image.rows * ratio));
+        cv::Mat compressed;
+        cv::resize(image, compressed, cv::Size(image.cols * ratio, image.rows * ratio));
         return compressed;
     }
 
@@ -162,15 +161,15 @@ public:
 
     int detect_traffic_lights(cv::Mat& image){
 
-        int yellow_threshold = 100;
-        int red_threshold = 100;
-        int min_contour_area = 500;
-        float min_circle_ratio = 0.8;
-        int center_thresh = 230;
+        int yellow_threshold = 50;
+        int red_threshold = 50;
+        int min_contour_area = 200;
+        float min_circle_ratio = 0.7;
+        int center_thresh = 200;
 
 
-        // cv::Mat compressed = this->compressImg(image, 0.5);
-        cv::Mat compressed = image.clone();
+        cv::Mat compressed = this->compressImg(image, 0.5);
+        // cv::Mat compressed = image.clone();
         cv::Mat gray;
         cv::cvtColor(compressed, gray, cv::COLOR_BGR2GRAY);
 
@@ -200,6 +199,7 @@ public:
             return 0;
         }
     }
+    
 
     image_transport::Publisher signal_binary_pub;
     image_transport::Publisher signal_contour_pub;
@@ -216,7 +216,6 @@ public:
     ros::Publisher signal_result_pub;
     ros::Publisher cross_result_pub;
     ros::Publisher light_result_pub;
-
 };
 
 
@@ -233,6 +232,9 @@ int imageCallback(const sensor_msgs::ImageConstPtr& msg, Detector& detector)
     std_msgs::Int16 light_result_msg;
     light_result_msg.data = light_result;
     detector.light_result_pub.publish(light_result_msg);
+
+    
+
     return 0;
 }
 
@@ -245,7 +247,7 @@ int main(int argc, char** argv)
     
     Detector detector(it, nh);
 
-    image_transport::Subscriber sub = it.subscribe("/camera/image", 1, boost::bind(imageCallback, _1, detector));
+    image_transport::Subscriber sub = it.subscribe("/camera/rgb/image_raw", 1, boost::bind(imageCallback, _1, detector));
 
     ros::Rate loop_rate(5);
     while (nh.ok()) {
