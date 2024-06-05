@@ -283,6 +283,9 @@ int imageCallback(const sensor_msgs::ImageConstPtr& msg, Detector& detector)
     detector.light_result_pub.publish(light_result_msg);
 
     int cross_result = detector.detect_cross(image);
+    std_msgs::Int16 cross_result_msg;
+    cross_result_msg.data = cross_result;
+    detector.cross_result_pub.publish(cross_result_msg);
 
     return 0;
 }
