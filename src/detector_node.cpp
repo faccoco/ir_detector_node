@@ -203,12 +203,12 @@ public:
     }
 
     int detect_cross(cv::Mat& image){
-        int threshold = 225;
+        int threshold = 250;
         int min_contour_area = 300;
         float min_rect_ratio = 5;
         float max_rect_angle = 10;
 
-        cv::Mat compressed = this->compressImg(image, 0.5);
+        cv::Mat compressed = this->compressImg(image, 0.25);
         cv::Mat binary = this->binary(compressed, threshold);
 
         cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(7, 7));
